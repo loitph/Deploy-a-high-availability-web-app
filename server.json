@@ -1,0 +1,14 @@
+[
+  {
+      "ParameterKey": "EnvironmentName",
+      "ParameterValue": "UdacityProject"
+  },
+  {
+      "ParameterKey": "ServerAMIId",
+      "ParameterValue": "ami-0ae8f15ae66fe8cda"
+  },
+  {
+      "ParameterKey": "InstanceType",
+      "ParameterValue": "t2.micro"
+  }
+]
