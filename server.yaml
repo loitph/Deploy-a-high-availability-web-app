@@ -1,8 +1,7 @@
 Description: Stack Server Components
 
 Parameters:
-  # Add your parameters here
-  ProjectName:
+  EnvironmentName:
     Type: String
     Description: Name of our environment
   VolumeSize:
@@ -22,10 +21,9 @@ Parameters:
     Type: String
 
 Resources:
-  # Add your resources here
   WebAppLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
-    Properties: 
+    Properties:
       LaunchTemplateData:
         UserData:
           Fn::Base64: !Sub |
@@ -38,12 +36,12 @@ Resources:
         ImageId: !Ref ServerAMIId
         KeyName: !Ref KeyPairName
         SecurityGroupIds:
-        - !Ref WebServerSecGroup
+          - !Ref WebServerSecGroup
         InstanceType: !Ref InstanceType
         BlockDeviceMappings:
-        - DeviceName: "/dev/sdk"
-          Ebs:
-            VolumeSize: !Ref VolumeSize
+          - DeviceName: "/dev/sdk"
+            Ebs:
+              VolumeSize: !Ref VolumeSize
         IamInstanceProfile:
           Name: !Ref WebAppInstanceProfile
 
@@ -52,116 +50,112 @@ Resources:
     Properties:
       GroupDescription: Allow http access to our load balancer
       VpcId:
-        Fn::ImportValue:
-          !Sub "${ProjectName}-vpc-id"
+        Fn::ImportValue: !Sub "${EnvironmentName}-vpc-id"
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
 
   WebServerSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http access to our hosts from the LB Security Group
       VpcId:
-        Fn::ImportValue:
-          !Sub "${ProjectName}-vpc-id"
+        Fn::ImportValue: !Sub "${EnvironmentName}-vpc-id"
       SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        SourceSecurityGroupId: !Ref LBSecGroup
-        
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LBSecGroup
+
       SecurityGroupEgress:
-      - IpProtocol: tcp
-        FromPort: 0
-        ToPort: 65535
-        CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
 
   WebAppInstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${ProjectName}-web-servers"
+      RoleName: !Sub "${EnvironmentName}-web-servers"
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: 'Allow'
-          Principal:
-            Service:
-            - 'ec2.amazonaws.com'
-          Action:
-          - 'sts:AssumeRole'
-      Policies:
-      - PolicyName: web-servers-policy
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
             Action:
-            - 's3:GetObject'
-            - 's3:PutObject'
-            Resource:
-              - !Sub "arn:aws:s3:::s3://${S3BucketName}/*"
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: web-servers-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject"
+                Resource:
+                  - !Sub "arn:aws:s3:::s3://${S3BucketName}/*"
 
-      # For Amazon SSM access
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
   WebAppInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      Path: '/'
+      Path: "/"
       Roles:
-      - !Ref WebAppInstanceRole
+        - !Ref WebAppInstanceRole
 
   WebAppGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier:
-      - Fn::ImportValue: 
-          !Sub "${ProjectName}-private-subnets"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-private-subnets"
       LaunchTemplate:
         LaunchTemplateId: !Ref WebAppLaunchTemplate
         Version: !GetAtt WebAppLaunchTemplate.LatestVersionNumber
-      MinSize: '1'
-      DesiredCapacity: '1'
-      MaxSize: '3'
+      MinSize: "1"
+      DesiredCapacity: "1"
+      MaxSize: "3"
       TargetGroupARNs:
-      - Ref: WebAppTargetGroup
+        - Ref: WebAppTargetGroup
 
   WebAppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Subnets:
-      - Fn::ImportValue: !Sub "${ProjectName}-public-subnet1"
-      - Fn::ImportValue: !Sub "${ProjectName}-public-subnet2"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-public-subnet1"
+        - Fn::ImportValue: !Sub "${EnvironmentName}-public-subnet2"
       SecurityGroups:
-      - Ref: LBSecGroup
+        - Ref: LBSecGroup
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
-      - Type: forward
-        TargetGroupArn:
-          Ref: WebAppTargetGroup
+        - Type: forward
+          TargetGroupArn:
+            Ref: WebAppTargetGroup
       LoadBalancerArn:
         Ref: WebAppLB
-      Port: '80'
+      Port: "80"
       Protocol: HTTP
 
   ALBListenerRule:
-      Type: AWS::ElasticLoadBalancingV2::ListenerRule
-      Properties:
-        Actions:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
         - Type: forward
-          TargetGroupArn: !Ref 'WebAppTargetGroup'
-        Conditions:
+          TargetGroupArn: !Ref "WebAppTargetGroup"
+      Conditions:
         - Field: path-pattern
           Values: [/]
-        ListenerArn: !Ref 'Listener'
-        Priority: 1
+      ListenerArn: !Ref "Listener"
+      Priority: 1
 
   WebAppTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -174,9 +168,9 @@ Resources:
       Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 5
-      VpcId: 
+      VpcId:
         Fn::ImportValue:
-          Fn::Sub: "${ProjectName}-vpc-id"
+          Fn::Sub: "${EnvironmentName}-vpc-id"
 
   # S3 bucket
   S3Bucket:
@@ -201,4 +195,4 @@ Outputs:
     Description: "The public URL of the Application (i.e. the LoadBalancer's DNS)"
     Value: !Sub "http://${WebAppLB.DNSName}"
     Export:
-      Name: !Sub "${ProjectName}-LoadBalancerURL"
+      Name: !Sub "${EnvironmentName}-LoadBalancerURL"

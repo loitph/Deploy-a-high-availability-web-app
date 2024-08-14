@@ -1,26 +1,26 @@
 [
-    {
-        "ParameterKey": "ProjectName",
-        "ParameterValue": "udagram"
-    },
-    {
-        "ParameterKey": "VolumeSize",
-        "ParameterValue": "10"
-    },
-	{
-		"ParameterKey": "S3BucketName",
-		"ParameterValue": "loitph-project3"
-	},
-	{
-		"ParameterKey": "KeyPairName",
-		"ParameterValue": "vockey"
-	},
-    {
-        "ParameterKey": "ServerAMIId",
-        "ParameterValue": "ami-0ae8f15ae66fe8cda"
-    },
-    {
-        "ParameterKey": "InstanceType",
-        "ParameterValue": "t2.micro"
-    }
+  {
+    "ParameterKey": "EnvironmentName",
+    "ParameterValue": "UdacityProject"
+  },
+  {
+    "ParameterKey": "VolumeSize",
+    "ParameterValue": "10"
+  },
+  {
+    "ParameterKey": "S3BucketName",
+    "ParameterValue": "loitph-project3"
+  },
+  {
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "vockey"
+  },
+  {
+    "ParameterKey": "ServerAMIId",
+    "ParameterValue": "ami-0ae8f15ae66fe8cda"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "t2.micro"
+  }
 ]
